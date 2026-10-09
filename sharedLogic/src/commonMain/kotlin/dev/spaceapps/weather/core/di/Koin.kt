@@ -1,0 +1,15 @@
+package dev.spaceapps.weather.core.di
+
+import dev.spaceapps.weather.feature.currentweather.di.currentWeatherModule
+import org.koin.core.KoinApplication
+import org.koin.core.context.startKoin
+import org.koin.dsl.KoinAppDeclaration
+
+fun initKoin(appDeclaration: KoinAppDeclaration = {}): KoinApplication = startKoin {
+    appDeclaration()
+    modules(
+        platformModule,
+        coreModule,
+        currentWeatherModule,
+    )
+}
