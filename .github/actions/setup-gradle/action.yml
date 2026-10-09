@@ -1,0 +1,13 @@
+name: Set up JDK and Gradle
+description: JDK 21 (matches gradle/gradle-daemon-jvm.properties) and Gradle with build caching.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: zulu
+        java-version: '21'
+
+    # Caches Gradle dependencies and the build cache; only main writes to the cache.
+    - uses: gradle/actions/setup-gradle@v6
