@@ -6,12 +6,28 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.CreationExtras
 import dev.spaceapps.weather.app.AppViewModel
 import dev.spaceapps.weather.core.settings.ThemeMode
+import dev.spaceapps.weather.feature.cities.presentation.detail.CityWeatherEffect
+import dev.spaceapps.weather.feature.cities.presentation.detail.CityWeatherIntent
+import dev.spaceapps.weather.feature.cities.presentation.detail.CityWeatherState
+import dev.spaceapps.weather.feature.cities.presentation.detail.CityWeatherViewModel
+import dev.spaceapps.weather.feature.cities.presentation.list.CitiesEffect
+import dev.spaceapps.weather.feature.cities.presentation.list.CitiesIntent
+import dev.spaceapps.weather.feature.cities.presentation.list.CitiesState
+import dev.spaceapps.weather.feature.cities.presentation.list.CitiesViewModel
+import dev.spaceapps.weather.feature.cities.presentation.search.CitySearchEffect
+import dev.spaceapps.weather.feature.cities.presentation.search.CitySearchIntent
+import dev.spaceapps.weather.feature.cities.presentation.search.CitySearchState
+import dev.spaceapps.weather.feature.cities.presentation.search.CitySearchViewModel
 import dev.spaceapps.weather.feature.currentweather.presentation.CurrentWeatherEffect
 import dev.spaceapps.weather.feature.currentweather.presentation.CurrentWeatherIntent
 import dev.spaceapps.weather.feature.currentweather.presentation.CurrentWeatherState
 import dev.spaceapps.weather.feature.currentweather.presentation.CurrentWeatherViewModel
+import dev.spaceapps.weather.feature.settings.presentation.SettingsIntent
+import dev.spaceapps.weather.feature.settings.presentation.SettingsState
+import dev.spaceapps.weather.feature.settings.presentation.SettingsViewModel
 import kotlin.reflect.KClass
 import org.koin.core.component.KoinComponent
+import org.koin.core.parameter.parametersOf
 
 /**
  * Swift-facing owners of shared ViewModels. Each owns a [ViewModelStore], so calling [clear]
@@ -65,4 +81,71 @@ class AppViewModelOwner : IosViewModelOwner<AppViewModel>(AppViewModel::class) {
 
     fun subscribeThemeMode(onThemeMode: (ThemeMode) -> Unit): FlowSubscription =
         viewModel.themeMode.subscribe(onThemeMode)
+}
+
+class CitiesViewModelOwner : IosViewModelOwner<CitiesViewModel>(CitiesViewModel::class) {
+    override fun create(): CitiesViewModel = getKoin().get()
+
+    val currentState: CitiesState
+        get() = viewModel.state.value
+
+    fun subscribeState(onState: (CitiesState) -> Unit): FlowSubscription =
+        viewModel.state.subscribe(onState)
+
+    fun subscribeEffects(onEffect: (CitiesEffect) -> Unit): FlowSubscription =
+        viewModel.effects.subscribe(onEffect)
+
+    fun onIntent(intent: CitiesIntent) {
+        viewModel.onIntent(intent)
+    }
+}
+
+class CitySearchViewModelOwner : IosViewModelOwner<CitySearchViewModel>(CitySearchViewModel::class) {
+    override fun create(): CitySearchViewModel = getKoin().get()
+
+    val currentState: CitySearchState
+        get() = viewModel.state.value
+
+    fun subscribeState(onState: (CitySearchState) -> Unit): FlowSubscription =
+        viewModel.state.subscribe(onState)
+
+    fun subscribeEffects(onEffect: (CitySearchEffect) -> Unit): FlowSubscription =
+        viewModel.effects.subscribe(onEffect)
+
+    fun onIntent(intent: CitySearchIntent) {
+        viewModel.onIntent(intent)
+    }
+}
+
+class CityWeatherViewModelOwner(
+    private val cityId: Long,
+) : IosViewModelOwner<CityWeatherViewModel>(CityWeatherViewModel::class) {
+    override fun create(): CityWeatherViewModel = getKoin().get { parametersOf(cityId) }
+
+    val currentState: CityWeatherState
+        get() = viewModel.state.value
+
+    fun subscribeState(onState: (CityWeatherState) -> Unit): FlowSubscription =
+        viewModel.state.subscribe(onState)
+
+    fun subscribeEffects(onEffect: (CityWeatherEffect) -> Unit): FlowSubscription =
+        viewModel.effects.subscribe(onEffect)
+
+    fun onIntent(intent: CityWeatherIntent) {
+        viewModel.onIntent(intent)
+    }
+}
+
+class SettingsViewModelOwner : IosViewModelOwner<SettingsViewModel>(SettingsViewModel::class) {
+    override fun create(): SettingsViewModel = getKoin().get()
+
+    val currentState: SettingsState
+        get() = viewModel.state.value
+
+    fun subscribeState(onState: (SettingsState) -> Unit): FlowSubscription =
+        viewModel.state.subscribe(onState)
+
+    fun onIntent(intent: SettingsIntent) {
+        viewModel.onIntent(intent)
+    }
 }

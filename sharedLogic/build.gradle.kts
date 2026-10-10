@@ -2,6 +2,7 @@ import com.codingfeline.buildkonfig.compiler.FieldSpec
 import java.io.StringReader
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -85,7 +86,20 @@ kotlin {
             implementation(libs.koin.test)
             implementation(libs.turbine)
         }
+        // Database tests need the bundled SQLite native library, which only loads on native targets
+        // (not in Android host tests), so they live in iosTest.
+        iosTest.dependencies {
+            implementation(libs.room3.testing)
+        }
     }
+}
+
+// Lets database tests find the exported Room schemas. Simulator processes only receive
+// variables prefixed with SIMCTL_CHILD_, so both forms are set.
+tasks.withType<KotlinNativeTest>().configureEach {
+    val schemaDirectory = layout.projectDirectory.dir("schemas").asFile.absolutePath
+    environment("ROOM_SCHEMA_DIR", schemaDirectory)
+    environment("SIMCTL_CHILD_ROOM_SCHEMA_DIR", schemaDirectory)
 }
 
 dependencies {

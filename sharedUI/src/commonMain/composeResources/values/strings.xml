@@ -1,8 +1,19 @@
 <resources>
     <string name="app_title">Weather</string>
 
-    <!-- Settings menu -->
-    <string name="settings">Settings</string>
+    <!-- Bottom navigation -->
+    <string name="tab_weather">Weather</string>
+    <string name="tab_cities">Cities</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="undo">Undo</string>
+
+    <!-- Settings -->
     <string name="settings_units">Units</string>
     <string name="units_metric">Metric (°C, m/s)</string>
     <string name="units_imperial">Imperial (°F, mph)</string>
@@ -27,9 +38,22 @@
     <string name="permission_banner">Location access is off. Showing weather for the last known place.</string>
     <string name="permission_allow">Allow</string>
 
+    <!-- Cities -->
+    <string name="add_city">Add city</string>
+    <string name="cities_empty_title">No saved cities</string>
+    <string name="cities_empty_message">Add cities to see their weather side by side.</string>
+    <string name="city_deleted">%1$s removed</string>
+    <string name="delete_city_title">Remove %1$s?</string>
+    <string name="delete_city_message">Its weather will no longer be shown in your list.</string>
+
+    <!-- Search -->
+    <string name="search_hint">Search for a city</string>
+    <string name="clear_search">Clear search</string>
+    <string name="search_no_results">No cities found for \"%1$s\".</string>
+    <string name="city_saved">Already saved</string>
+
     <!-- Errors -->
     <string name="error_title">Couldn\'t load the weather</string>
-    <string name="retry">Retry</string>
     <string name="error_no_internet">No internet connection.</string>
     <string name="error_timeout">The weather service took too long to respond.</string>
     <string name="error_invalid_api_key">The OpenWeather API key is invalid or not activated yet.</string>

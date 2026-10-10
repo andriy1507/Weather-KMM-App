@@ -6,8 +6,9 @@ import dev.spaceapps.weather.core.location.Coordinates
 import dev.spaceapps.weather.core.location.LocationError
 import dev.spaceapps.weather.feature.currentweather.domain.usecase.RefreshCurrentWeatherUseCase
 import dev.spaceapps.weather.feature.currentweather.domain.usecase.RefreshError
-import dev.spaceapps.weather.testing.FakeCurrentWeatherRepository
+import dev.spaceapps.weather.feature.weather.domain.WeatherLocation
 import dev.spaceapps.weather.testing.FakeLocationProvider
+import dev.spaceapps.weather.testing.FakeWeatherRepository
 import dev.spaceapps.weather.testing.sampleCurrentWeather
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,18 +22,18 @@ class RefreshCurrentWeatherUseCaseTest {
 
     @Test
     fun `refreshes weather at the current device location`() = runTest {
-        val repository = FakeCurrentWeatherRepository(cached = sampleCurrentWeather())
+        val repository = FakeWeatherRepository(cached = sampleCurrentWeather())
 
         val result = RefreshCurrentWeatherUseCase(locationProvider, repository)()
 
         assertEquals(Outcome.Success(Unit), result)
-        assertEquals(listOf(deviceLocation), repository.refreshedCoordinates)
+        assertEquals(listOf<Pair<WeatherLocation, Coordinates>>(WeatherLocation.Current to deviceLocation), repository.refreshes)
     }
 
     @Test
     fun `falls back to last known coordinates when location is unavailable`() = runTest {
         val cached = sampleCurrentWeather()
-        val repository = FakeCurrentWeatherRepository(cached = cached)
+        val repository = FakeWeatherRepository(cached = cached)
         locationProvider.location = Outcome.Failure(LocationError.PERMISSION_DENIED)
 
         val result = RefreshCurrentWeatherUseCase(locationProvider, repository)()
@@ -43,7 +44,7 @@ class RefreshCurrentWeatherUseCaseTest {
 
     @Test
     fun `fails with location error when there is no location and no cache`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         locationProvider.location = Outcome.Failure(LocationError.LOCATION_DISABLED)
 
         val result = RefreshCurrentWeatherUseCase(locationProvider, repository)()
@@ -54,7 +55,7 @@ class RefreshCurrentWeatherUseCaseTest {
 
     @Test
     fun `wraps remote failures`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         repository.refreshResult = Outcome.Failure(DataError.Remote.NO_INTERNET)
 
         val result = RefreshCurrentWeatherUseCase(locationProvider, repository)()

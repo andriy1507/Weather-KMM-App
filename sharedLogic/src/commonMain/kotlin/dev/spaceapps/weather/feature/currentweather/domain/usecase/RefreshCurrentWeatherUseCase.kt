@@ -6,7 +6,8 @@ import dev.spaceapps.weather.core.domain.EmptyOutcome
 import dev.spaceapps.weather.core.domain.Outcome
 import dev.spaceapps.weather.core.location.LocationError
 import dev.spaceapps.weather.core.location.LocationProvider
-import dev.spaceapps.weather.feature.currentweather.domain.CurrentWeatherRepository
+import dev.spaceapps.weather.feature.weather.domain.WeatherLocation
+import dev.spaceapps.weather.feature.weather.domain.WeatherRepository
 
 sealed interface RefreshError : AppError {
     data class Location(val error: LocationError) : RefreshError
@@ -19,15 +20,15 @@ sealed interface RefreshError : AppError {
  */
 class RefreshCurrentWeatherUseCase(
     private val locationProvider: LocationProvider,
-    private val repository: CurrentWeatherRepository,
+    private val repository: WeatherRepository,
 ) {
     suspend operator fun invoke(): EmptyOutcome<RefreshError> {
         val coordinates = when (val location = locationProvider.getCurrentLocation()) {
             is Outcome.Success -> location.data
-            is Outcome.Failure -> repository.lastKnownCoordinates()
+            is Outcome.Failure -> repository.cachedCoordinates(WeatherLocation.Current)
                 ?: return Outcome.Failure(RefreshError.Location(location.error))
         }
-        return when (val result = repository.refresh(coordinates)) {
+        return when (val result = repository.refresh(WeatherLocation.Current, coordinates)) {
             is Outcome.Success -> result
             is Outcome.Failure -> Outcome.Failure(RefreshError.Remote(result.error))
         }
