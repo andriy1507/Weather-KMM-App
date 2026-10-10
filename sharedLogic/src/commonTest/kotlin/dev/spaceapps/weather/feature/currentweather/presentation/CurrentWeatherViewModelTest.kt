@@ -5,13 +5,13 @@ import dev.spaceapps.weather.core.domain.DataError
 import dev.spaceapps.weather.core.domain.Outcome
 import dev.spaceapps.weather.core.location.LocationError
 import dev.spaceapps.weather.core.settings.DataStoreSettingsRepository
-import dev.spaceapps.weather.core.settings.ThemeMode
 import dev.spaceapps.weather.core.settings.UnitSystem
 import dev.spaceapps.weather.feature.currentweather.domain.usecase.ObserveCurrentWeatherUseCase
 import dev.spaceapps.weather.feature.currentweather.domain.usecase.RefreshCurrentWeatherUseCase
-import dev.spaceapps.weather.testing.FakeCurrentWeatherRepository
+import dev.spaceapps.weather.feature.weather.presentation.WeatherError
 import dev.spaceapps.weather.testing.FakeLocationProvider
 import dev.spaceapps.weather.testing.FakePreferencesDataStore
+import dev.spaceapps.weather.testing.FakeWeatherRepository
 import dev.spaceapps.weather.testing.sampleCurrentWeather
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -44,7 +44,7 @@ class CurrentWeatherViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel(repository: FakeCurrentWeatherRepository) = CurrentWeatherViewModel(
+    private fun viewModel(repository: FakeWeatherRepository) = CurrentWeatherViewModel(
         observeCurrentWeather = ObserveCurrentWeatherUseCase(repository),
         refreshCurrentWeather = RefreshCurrentWeatherUseCase(locationProvider, repository),
         locationProvider = locationProvider,
@@ -54,14 +54,14 @@ class CurrentWeatherViewModelTest {
 
     @Test
     fun `shows cached weather immediately`() = runTest {
-        val viewModel = viewModel(FakeCurrentWeatherRepository(cached = sampleCurrentWeather()))
+        val viewModel = viewModel(FakeWeatherRepository(cached = sampleCurrentWeather()))
 
         assertEquals("12°", viewModel.state.value.weather?.temperature)
     }
 
     @Test
     fun `screen start with permission refreshes weather`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         val viewModel = viewModel(repository)
 
         viewModel.onIntent(CurrentWeatherIntent.ScreenStarted)
@@ -76,7 +76,7 @@ class CurrentWeatherViewModelTest {
 
     @Test
     fun `screen start is handled once`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         val viewModel = viewModel(repository)
 
         viewModel.onIntent(CurrentWeatherIntent.ScreenStarted)
@@ -87,7 +87,7 @@ class CurrentWeatherViewModelTest {
 
     @Test
     fun `screen start without permission requests it instead of refreshing`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         locationProvider.hasPermission = false
         val viewModel = viewModel(repository)
 
@@ -103,19 +103,19 @@ class CurrentWeatherViewModelTest {
     fun `denied permission without cache shows permission error`() = runTest {
         locationProvider.hasPermission = false
         locationProvider.location = Outcome.Failure(LocationError.PERMISSION_DENIED)
-        val viewModel = viewModel(FakeCurrentWeatherRepository())
+        val viewModel = viewModel(FakeWeatherRepository())
 
         viewModel.onIntent(CurrentWeatherIntent.PermissionResult(granted = false))
 
         val state = viewModel.state.value
         assertEquals(LocationPermission.DENIED, state.permission)
-        assertEquals(CurrentWeatherError.LOCATION_PERMISSION_DENIED, state.error)
+        assertEquals(WeatherError.LOCATION_PERMISSION_DENIED, state.error)
         assertNull(state.weather)
     }
 
     @Test
     fun `granted permission refreshes weather`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         val viewModel = viewModel(repository)
 
         viewModel.onIntent(CurrentWeatherIntent.PermissionResult(granted = true))
@@ -126,14 +126,14 @@ class CurrentWeatherViewModelTest {
 
     @Test
     fun `failure with cached weather keeps it and emits a one-off error`() = runTest {
-        val repository = FakeCurrentWeatherRepository(cached = sampleCurrentWeather())
+        val repository = FakeWeatherRepository(cached = sampleCurrentWeather())
         repository.refreshResult = Outcome.Failure(DataError.Remote.NO_INTERNET)
         val viewModel = viewModel(repository)
 
         viewModel.effects.test {
             viewModel.onIntent(CurrentWeatherIntent.Refresh)
 
-            assertEquals(CurrentWeatherEffect.ShowError(CurrentWeatherError.NO_INTERNET), awaitItem())
+            assertEquals(CurrentWeatherEffect.ShowError(WeatherError.NO_INTERNET), awaitItem())
         }
         assertNotNull(viewModel.state.value.weather)
         assertNull(viewModel.state.value.error)
@@ -141,12 +141,12 @@ class CurrentWeatherViewModelTest {
 
     @Test
     fun `failure without cache shows error state until a refresh succeeds`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         repository.refreshResult = Outcome.Failure(DataError.Remote.UNAUTHORIZED)
         val viewModel = viewModel(repository)
 
         viewModel.onIntent(CurrentWeatherIntent.Refresh)
-        assertEquals(CurrentWeatherError.INVALID_API_KEY, viewModel.state.value.error)
+        assertEquals(WeatherError.INVALID_API_KEY, viewModel.state.value.error)
 
         repository.refreshResult = Outcome.Success(Unit)
         viewModel.onIntent(CurrentWeatherIntent.Refresh)
@@ -156,7 +156,7 @@ class CurrentWeatherViewModelTest {
 
     @Test
     fun `loading without cache and refreshing with cache without concurrent refreshes`() = runTest {
-        val repository = FakeCurrentWeatherRepository()
+        val repository = FakeWeatherRepository()
         val gate = CompletableDeferred<Unit>().also { repository.refreshGate = it }
         val viewModel = viewModel(repository)
 
@@ -176,27 +176,17 @@ class CurrentWeatherViewModelTest {
     }
 
     @Test
-    fun `changing units reformats weather`() = runTest {
-        val viewModel = viewModel(FakeCurrentWeatherRepository(cached = sampleCurrentWeather()))
+    fun `changing units in settings reformats weather`() = runTest {
+        val viewModel = viewModel(FakeWeatherRepository(cached = sampleCurrentWeather()))
 
-        viewModel.onIntent(CurrentWeatherIntent.ChangeUnitSystem(UnitSystem.IMPERIAL))
+        settingsRepository.setUnitSystem(UnitSystem.IMPERIAL)
 
-        assertEquals(UnitSystem.IMPERIAL, viewModel.state.value.unitSystem)
         assertEquals("54°", viewModel.state.value.weather?.temperature)
     }
 
     @Test
-    fun `changing theme updates state`() = runTest {
-        val viewModel = viewModel(FakeCurrentWeatherRepository())
-
-        viewModel.onIntent(CurrentWeatherIntent.ChangeThemeMode(ThemeMode.DARK))
-
-        assertEquals(ThemeMode.DARK, viewModel.state.value.themeMode)
-    }
-
-    @Test
     fun `grant permission click requests permission`() = runTest {
-        val viewModel = viewModel(FakeCurrentWeatherRepository())
+        val viewModel = viewModel(FakeWeatherRepository())
 
         viewModel.effects.test {
             viewModel.onIntent(CurrentWeatherIntent.GrantPermissionClicked)

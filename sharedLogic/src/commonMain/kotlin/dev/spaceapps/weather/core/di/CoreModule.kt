@@ -29,7 +29,8 @@ internal val coreModule = module {
     single { createHttpClient(engine = get(), json = get(), apiKey = BuildKonfig.OPEN_WEATHER_API_KEY) }
 
     single { createAppDatabase(builder = get()) }
-    single { get<AppDatabase>().currentWeatherDao() }
+    single { get<AppDatabase>().weatherCacheDao() }
+    single { get<AppDatabase>().savedCityDao() }
 
     single<SettingsRepository> { DataStoreSettingsRepository(dataStore = get()) }
 

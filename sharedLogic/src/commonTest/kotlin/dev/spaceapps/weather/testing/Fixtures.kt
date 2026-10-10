@@ -1,10 +1,10 @@
 package dev.spaceapps.weather.testing
 
 import dev.spaceapps.weather.core.network.createJson
-import dev.spaceapps.weather.feature.currentweather.data.mapper.toDomain
-import dev.spaceapps.weather.feature.currentweather.data.mapper.toEntity
-import dev.spaceapps.weather.feature.currentweather.data.remote.CurrentWeatherDto
-import dev.spaceapps.weather.feature.currentweather.domain.model.CurrentWeather
+import dev.spaceapps.weather.feature.weather.data.mapper.toDomain
+import dev.spaceapps.weather.feature.weather.data.mapper.toEntity
+import dev.spaceapps.weather.feature.weather.data.remote.CurrentWeatherDto
+import dev.spaceapps.weather.feature.weather.domain.model.CurrentWeather
 import kotlin.time.Instant
 
 /** Real response shape of `GET /data/2.5/weather?units=metric` (Kyiv). */
@@ -35,5 +35,5 @@ const val CURRENT_WEATHER_JSON = """
 /** [CURRENT_WEATHER_JSON] as a domain model; fetched at 10:02:03 UTC. */
 fun sampleCurrentWeather(): CurrentWeather =
     createJson().decodeFromString<CurrentWeatherDto>(CURRENT_WEATHER_JSON)
-        .toEntity(fetchedAt = Instant.fromEpochMilliseconds(1_791_540_123_456))
+        .toEntity(locationKey = "current", fetchedAt = Instant.fromEpochMilliseconds(1_791_540_123_456))
         .toDomain()

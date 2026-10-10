@@ -1,15 +1,16 @@
 package dev.spaceapps.weather.feature.currentweather.presentation
 
 import androidx.lifecycle.viewModelScope
-import dev.spaceapps.weather.core.domain.DataError
 import dev.spaceapps.weather.core.domain.Outcome
-import dev.spaceapps.weather.core.location.LocationError
 import dev.spaceapps.weather.core.location.LocationProvider
 import dev.spaceapps.weather.core.mvi.MviViewModel
 import dev.spaceapps.weather.core.settings.SettingsRepository
 import dev.spaceapps.weather.feature.currentweather.domain.usecase.ObserveCurrentWeatherUseCase
 import dev.spaceapps.weather.feature.currentweather.domain.usecase.RefreshCurrentWeatherUseCase
 import dev.spaceapps.weather.feature.currentweather.domain.usecase.RefreshError
+import dev.spaceapps.weather.feature.weather.presentation.WeatherError
+import dev.spaceapps.weather.feature.weather.presentation.toUi
+import dev.spaceapps.weather.feature.weather.presentation.toWeatherError
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
@@ -20,7 +21,7 @@ class CurrentWeatherViewModel(
     observeCurrentWeather: ObserveCurrentWeatherUseCase,
     private val refreshCurrentWeather: RefreshCurrentWeatherUseCase,
     private val locationProvider: LocationProvider,
-    private val settingsRepository: SettingsRepository,
+    settingsRepository: SettingsRepository,
     private val deviceTimeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) : MviViewModel<CurrentWeatherState, CurrentWeatherIntent, CurrentWeatherEffect>(CurrentWeatherState()) {
 
@@ -34,8 +35,6 @@ class CurrentWeatherViewModel(
                     weather = weather?.toUi(settings.unitSystem, deviceTimeZone()),
                     // Cached data makes the empty-state error obsolete.
                     error = if (weather != null) null else error,
-                    unitSystem = settings.unitSystem,
-                    themeMode = settings.themeMode,
                 )
             }
         }.launchIn(viewModelScope)
@@ -48,10 +47,6 @@ class CurrentWeatherViewModel(
             CurrentWeatherIntent.GrantPermissionClicked ->
                 sendEffect(CurrentWeatherEffect.RequestLocationPermission)
             CurrentWeatherIntent.Refresh -> refresh()
-            is CurrentWeatherIntent.ChangeUnitSystem ->
-                viewModelScope.launch { settingsRepository.setUnitSystem(intent.unitSystem) }
-            is CurrentWeatherIntent.ChangeThemeMode ->
-                viewModelScope.launch { settingsRepository.setThemeMode(intent.themeMode) }
         }
     }
 
@@ -84,7 +79,7 @@ class CurrentWeatherViewModel(
             when (result) {
                 is Outcome.Success -> setState { copy(error = null) }
                 is Outcome.Failure -> {
-                    val error = result.error.toUiError()
+                    val error = result.error.toWeatherError()
                     if (currentState.weather == null) {
                         setState { copy(error = error) }
                     } else {
@@ -99,18 +94,7 @@ class CurrentWeatherViewModel(
 private fun Boolean.toPermission(): LocationPermission =
     if (this) LocationPermission.GRANTED else LocationPermission.DENIED
 
-private fun RefreshError.toUiError(): CurrentWeatherError = when (this) {
-    is RefreshError.Location -> when (error) {
-        LocationError.PERMISSION_DENIED -> CurrentWeatherError.LOCATION_PERMISSION_DENIED
-        LocationError.LOCATION_DISABLED -> CurrentWeatherError.LOCATION_DISABLED
-        LocationError.UNAVAILABLE -> CurrentWeatherError.LOCATION_UNAVAILABLE
-    }
-    is RefreshError.Remote -> when (error) {
-        DataError.Remote.NO_INTERNET -> CurrentWeatherError.NO_INTERNET
-        DataError.Remote.REQUEST_TIMEOUT -> CurrentWeatherError.TIMEOUT
-        DataError.Remote.UNAUTHORIZED -> CurrentWeatherError.INVALID_API_KEY
-        DataError.Remote.TOO_MANY_REQUESTS -> CurrentWeatherError.RATE_LIMITED
-        DataError.Remote.SERVER -> CurrentWeatherError.SERVER
-        DataError.Remote.SERIALIZATION, DataError.Remote.UNKNOWN -> CurrentWeatherError.UNKNOWN
-    }
+private fun RefreshError.toWeatherError(): WeatherError = when (this) {
+    is RefreshError.Location -> error.toWeatherError()
+    is RefreshError.Remote -> error.toWeatherError()
 }
