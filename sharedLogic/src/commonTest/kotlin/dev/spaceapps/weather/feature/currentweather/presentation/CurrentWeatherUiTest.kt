@@ -44,7 +44,7 @@ class CurrentWeatherUiTest {
     }
 
     @Test
-    fun `sun times use the location offset, update time uses the device zone`() {
+    fun `sun times use the location offset while update time uses the device zone`() {
         val ui = weather.toUi(UnitSystem.METRIC, TimeZone.of("America/New_York"))
 
         // Sunrise 04:00 UTC, sunset 15:00 UTC, location is UTC+3.

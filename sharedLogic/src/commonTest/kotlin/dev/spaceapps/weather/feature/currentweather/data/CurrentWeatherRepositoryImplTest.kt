@@ -57,7 +57,7 @@ class CurrentWeatherRepositoryImplTest {
     }
 
     @Test
-    fun `refresh calls current weather endpoint with coordinates, metric units and api key`() = runTest {
+    fun `refresh calls current weather endpoint with coordinates and metric units and api key`() = runTest {
         repository(okResponse).refresh(kyiv)
 
         val url = requests.single().url

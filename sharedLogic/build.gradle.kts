@@ -13,6 +13,11 @@ plugins {
 }
 
 kotlin {
+    compilerOptions {
+        // Room's @ConstructedBy needs an `expect object` (AppDatabaseConstructor).
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()

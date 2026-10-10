@@ -155,7 +155,7 @@ class CurrentWeatherViewModelTest {
     }
 
     @Test
-    fun `loading without cache, refreshing with cache, and no concurrent refreshes`() = runTest {
+    fun `loading without cache and refreshing with cache without concurrent refreshes`() = runTest {
         val repository = FakeCurrentWeatherRepository()
         val gate = CompletableDeferred<Unit>().also { repository.refreshGate = it }
         val viewModel = viewModel(repository)
