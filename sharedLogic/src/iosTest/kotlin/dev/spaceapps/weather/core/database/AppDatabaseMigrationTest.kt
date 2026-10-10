@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalForeignApi::class)
+
 package dev.spaceapps.weather.core.database
 
 import androidx.room3.testing.MigrationTestHelper
@@ -18,7 +20,6 @@ import platform.posix.getenv
 /** Validates migrations against the schemas exported to `sharedLogic/schemas`. */
 class AppDatabaseMigrationTest {
 
-    @OptIn(ExperimentalForeignApi::class)
     private val schemaDirectory = getenv("ROOM_SCHEMA_DIR")?.toKString()
         ?: error("ROOM_SCHEMA_DIR is not set; it is configured for KotlinNativeTest tasks in sharedLogic/build.gradle.kts")
 
